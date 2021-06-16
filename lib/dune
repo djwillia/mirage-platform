@@ -1,25 +1,53 @@
 (library
+ (name oS_stubs)
+ (modules)
+ (foreign_stubs
+  (language c)
+  (names
+   alloc_pages_stubs
+   atomic_stubs
+   barrier_stubs
+   checksum_stubs
+   clock_stubs
+   cstruct_stubs
+   main
+   mm_stubs
+   solo5_block_stubs
+   solo5_console_stubs
+   solo5_net_stubs)))
+
+(library
  (name oS)
  (public_name mirage-solo5)
  (private_modules lifecycle main mM time solo5)
- (libraries mirage-runtime bheap lwt cstruct metrics duration))
+ (libraries mirage-runtime bheap lwt cstruct metrics duration)
+ (no_dynlink)
+ (foreign_archives mirage-solo5_bindings))
+
+(copy_files# ./bindings/*.c)
+
+; Mirage 4
 
 (rule
- (deps
-  (source_tree bindings))
- (target libmirage-solo5_bindings.a)
+ (target libmirage-solo5_bindings.true.a)
  (action
-  (no-infer
-   (progn
-    (chdir
-     bindings
-     (run %{make}))
-    (copy bindings/libmirage-solo5_bindings.a libmirage-solo5_bindings.a)))))
+  (copy liboS_stubs_stubs.a %{target})))
 
-(include_subdirs unqualified)
+; Mirage 3
+
+(rule
+ (target libmirage-solo5_bindings.false.a)
+ (action
+  (copy bindings/libmirage-solo5_bindings.a %{target})))
+
+(rule
+ (target libmirage-solo5_bindings.a)
+ (deps
+  (:dep libmirage-solo5_bindings.%{lib-available:is_freestanding}.a))
+ (action
+  (copy %{dep} %{target})))
 
 (install
  (section lib)
  (files
-  (bindings/mirage-solo5.pc as ../pkgconfig/mirage-solo5.pc)
-  libmirage-solo5_bindings.a))
+  (bindings/mirage-solo5.pc as ../pkgconfig/mirage-solo5.pc)))
